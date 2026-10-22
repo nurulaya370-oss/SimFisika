@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulasi LKPD Kinematika Gerak</title>
+<style>
+:root{--bg:#f3f6fa;--card:#fff;--fg:#17202e;--mut:#667085;--line:#d3dae6;--acc:#1d5fd1;--acc2:#d9480f;--ok:#e6eefb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141d;--card:#18202e;--fg:#e8edf6;--mut:#9aa6bb;--line:#2c3649;--acc:#6ea4ff;--acc2:#ff9b62;--ok:#1d2a44}}
+:root[data-theme="dark"]{--bg:#0f141d;--card:#18202e;--fg:#e8edf6;--mut:#9aa6bb;--line:#2c3649;--acc:#6ea4ff;--acc2:#ff9b62;--ok:#1d2a44}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 Arial,Helvetica,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--card);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--card);border-bottom:1px solid var(--line);z-index:9;padding:8px 12px 0}
+h1{font-size:17px;margin:0 0 6px}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+nav button{white-space:nowrap;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:18px;padding:6px 12px;font:inherit;cursor:pointer}
+nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{max-width:860px;margin:0 auto;padding:12px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+h2{font-size:18px;margin:0 0 6px}
+.q{background:var(--ok);border-radius:8px;padding:8px 10px;margin:8px 0}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 2px}
+label b{color:var(--fg)}
+input[type=range]{width:100%}
+select,textarea{width:100%;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px;box-sizing:border-box}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0 18px}
+.btn{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.btn button{font:inherit;padding:7px 14px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
+.btn button[data-a=c],.btn button[data-a=x]{background:transparent;color:var(--acc)}
+canvas{display:block;width:100%;margin:6px 0}
+.out{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px}
+.sc{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:center}
+th{background:var(--ok)}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:2px}
+</style></head><body>
+<header><h1>Simulasi LKPD Kinematika Gerak</h1>
+<nav id="nav"></nav></header>
+<main id="main"></main>
+<script>
+const $=i=>document.getElementById(i),C=n=>getComputedStyle(document.body).getPropertyValue(n).trim(),
+cl=(v,a,b)=>Math.min(b,Math.max(a,v)),fm=v=>String(Math.round(v*100)/100).replace('.',','),
+V=(n,k)=>+$('k'+n+k).value,
+setV=(n,k,v)=>{$('k'+n+k).value=v;$('k'+n+k+'v').textContent=fm(v)};
+let cur=1,raf;
+function cv(id){const c=$(id),d=devicePixelRatio||1,w=c.clientWidth,h=+c.dataset.h;c.width=w*d;c.height=h*d;c.style.height=h+'px';const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.font='12px Arial';return[x,w,h]}
+function trip(id,acu,st,e1,e2,pr){
+ const[x,w,h]=cv(id),m=20,sx=p=>m+(w-2*m)*p/24,y=h-36,fg=C('--fg'),mu=C('--mut'),p1=st+e1,p2=p1+e2;
+ x.textAlign='center';x.lineWidth=1;x.strokeStyle=mu;x.beginPath();x.moveTo(m,y);x.lineTo(w-m,y);x.stroke();
+ for(let p=0;p<=24;p+=2){x.beginPath();x.moveTo(sx(p),y-4);x.lineTo(sx(p),y+4);x.stroke();x.fillStyle=fg;x.fillText(p-acu,sx(p),y+18)}
+ x.fillStyle=C('--acc2');x.fillText('▲ acuan',sx(acu),y+33);
+ const L=(a,b,c,k)=>{x.strokeStyle=k;x.lineWidth=3;x.beginPath();x.moveTo(sx(a),c);x.lineTo(sx(b),c);x.stroke()};
+ L(st,p1,y-22,C('--acc'));L(p1,p2,y-40,C('--acc2'));
+ x.lineWidth=1;x.strokeStyle=mu;[[st,22],[p1,40],[p2,40]].forEach(([p,u])=>{x.beginPath();x.moveTo(sx(p),y);x.lineTo(sx(p),y-u);x.stroke()});
+ x.fillStyle=fg;x.fillText('mulai',sx(st),y-48);x.fillText('akhir',sx(p2),y-60);
+ const a1=Math.abs(e1),D=pr*(a1+Math.abs(e2)),pos=D<=a1?st+Math.sign(e1)*D:p1+Math.sign(e2)*(D-a1);
+ x.fillStyle=C('--acc');x.beginPath();x.arc(sx(pos),y,8,0,7);x.fill();
+}
+function plot(x,a,b,w,h,fs,tm,ti,tn){
+ let lo=0,hi=0;const N=60;
+ fs.forEach(([f])=>{for(let i=0;i<=N;i++){const v=f(tm*i/N);lo=Math.min(lo,v);hi=Math.max(hi,v)}});
+ if(hi-lo<1e-9)hi=lo+1;
+ const px=t=>a+w*t/tm,py=v=>b+h-h*(v-lo)/(hi-lo);
+ x.lineWidth=1;x.strokeStyle=C('--line');x.strokeRect(a,b,w,h);
+ x.strokeStyle=C('--mut');x.beginPath();x.moveTo(a,py(0));x.lineTo(a+w,py(0));x.stroke();
+ x.fillStyle=C('--fg');x.textAlign='left';x.fillText(ti,a,b-6);
+ x.textAlign='right';x.fillText(fm(hi),a-4,b+10);x.fillText(fm(lo),a-4,b+h);x.fillText(fm(tm)+' s',a+w,b+h+14);
+ fs.forEach(([f,k])=>{x.strokeStyle=k;x.lineWidth=2;x.beginPath();
+  for(let i=0;i<=N;i++){const t=tm*i/N;i?x.lineTo(px(t),py(f(t))):x.moveTo(px(t),py(f(t)))}x.stroke();
+  x.fillStyle=k;x.beginPath();x.arc(px(tn),py(f(tn)),4,0,7);x.fill()});
+ x.strokeStyle=C('--mut');x.lineWidth=1;x.setLineDash([4,3]);x.beginPath();x.moveTo(px(tn),b);x.lineTo(px(tn),b+h);x.stroke();x.setLineDash([]);
+}
+function nice(a,b,n){const r=(b-a)||1,s=Math.pow(10,Math.floor(Math.log10(r/n))),e=r/n/s,st=(e<1.5?1:e<3.5?2:e<7.5?5:10)*s,o=[];for(let v=Math.ceil(a/st-1e-9)*st;v<=b+1e-9;v+=st)o.push(Math.round(v/st)*st);return o}
+function gplot(id,tm,fs,tn,yl,xl){
+ const[g,w,h]=cv(id),a=52,b=16,pw=w-a-16,ph=h-b-36;let lo=0,hi=0;
+ fs.forEach(([f])=>{for(let i=0;i<=60;i++){const v=f(tm*i/60);lo=Math.min(lo,v);hi=Math.max(hi,v)}});
+ if(hi-lo<1e-9)hi=lo+1;const pd=(hi-lo)*.08;hi+=pd;if(lo<0)lo-=pd;
+ const px=t=>a+pw*t/tm,py=v=>b+ph-ph*(v-lo)/(hi-lo);
+ g.lineWidth=1;g.textAlign='right';
+ nice(lo,hi,5).forEach(v=>{g.strokeStyle=C('--line');g.beginPath();g.moveTo(a,py(v));g.lineTo(a+pw,py(v));g.stroke();g.fillStyle=C('--fg');g.fillText(fm(v),a-5,py(v)+4)});
+ g.textAlign='center';
+ nice(0,tm,8).forEach(t=>{g.strokeStyle=C('--line');g.beginPath();g.moveTo(px(t),b);g.lineTo(px(t),b+ph);g.stroke();g.fillStyle=C('--fg');g.fillText(fm(t),px(t),b+ph+14)});
+ g.strokeStyle=C('--mut');g.strokeRect(a,b,pw,ph);
+ if(lo<0&&hi>0){g.beginPath();g.moveTo(a,py(0));g.lineTo(a+pw,py(0));g.stroke()}
+ g.fillStyle=C('--fg');g.fillText(xl,a+pw/2,h-4);g.textAlign='left';g.fillText(yl,a,b-4);
+ fs.forEach(([f,k])=>{g.strokeStyle=k;g.lineWidth=2;g.beginPath();
+  for(let i=0;i<=60;i++){const t=tm*i/60;i?g.lineTo(px(t),py(f(t))):g.moveTo(px(t),py(f(t)))}g.stroke();
+  const X=px(tn),Y=py(f(tn));g.setLineDash([4,3]);g.lineWidth=1;g.beginPath();g.moveTo(X,b+ph);g.lineTo(X,Y);g.lineTo(a,Y);g.stroke();g.setLineDash([]);
+  g.fillStyle=k;g.beginPath();g.arc(X,Y,4,0,7);g.fill();g.textAlign=X>w-70?'right':'left';g.fillText(fm(f(tn)),X+(X>w-70?-7:7),Y-7)});
+}
+const dir=d=>d>0?'(ke kanan)':d<0?'(ke kiri)':'';
+const P={
+1:{t:'LKPD 1 · Posisi, jarak, dan perpindahan',
+q:'Apakah posisi benda berubah jika titik acuan diganti? Apakah jarak dan perpindahan selalu bernilai sama?',
+c:[['acu','Letak titik acuan (x = 0)',0,24,2,12,'m'],['st','Posisi mulai benda',0,24,2,4,'m'],['l1','Langkah 1 (+ ke kanan)',-12,12,1,10,'m'],['l2','Langkah 2 (+ ke kanan)',-12,12,1,-4,'m'],['t','Progres gerak',0,100,1,100,'%']],
+h:['Letak acuan','x₁ (m)','x₂ (m)','Jarak (m)','Perpindahan (m)'],ah:140,
+draw(){const a=V(1,'acu'),s=V(1,'st'),p1=cl(s+V(1,'l1'),0,24),p2=cl(p1+V(1,'l2'),0,24),e1=p1-s,e2=p2-p1,j=Math.abs(e1)+Math.abs(e2),dx=p2-s;
+ trip('a1',a,s,e1,e2,V(1,'t')/100);this.r=[a,s-a,p2-a,j,dx];
+ $('o1').innerHTML=`Posisi awal x₁ = <b>${fm(s-a)} m</b> · posisi akhir x₂ = <b>${fm(p2-a)} m</b><br>Jarak tempuh = <b>${fm(j)} m</b> · perpindahan = <b>${fm(dx)} m</b> ${dir(dx)}`}},
+2:{t:'LKPD 2 · Kelajuan dan kecepatan',
+q:'Mengapa gerak yang sama dapat menghasilkan kelajuan dan kecepatan yang berbeda?',
+c:[['l1','Langkah 1 (+ ke kanan)',-12,12,1,10,'m'],['l2','Langkah 2 (+ ke kanan)',-12,12,1,-4,'m'],['w','Waktu seluruh perjalanan',1,20,1,7,'s'],['t','Waktu berjalan',0,20,0.1,7,'s']],
+h:['Langkah 1 (m)','Langkah 2 (m)','Waktu (s)','Jarak (m)','Perpindahan (m)','Kelajuan (m/s)','Kecepatan (m/s)'],ah:140,
+draw(){const W=V(2,'w');$('k2t').max=W;$('k2tv').textContent=fm(V(2,'t'));
+ const p1=cl(4+V(2,'l1'),0,24),p2=cl(p1+V(2,'l2'),0,24),e1=p1-4,e2=p2-p1,j=Math.abs(e1)+Math.abs(e2),dx=p2-4;
+ trip('a2',4,4,e1,e2,V(2,'t')/W);this.r=[e1,e2,W,j,dx,j/W,dx/W];
+ $('o2').innerHTML=`Jarak total = <b>${fm(j)} m</b> · perpindahan = <b>${fm(dx)} m</b> ${dir(dx)}<br>Waktu seluruh perjalanan = <b>${W} s</b><br>Kelajuan rata-rata = <b>${fm(j/W)} m/s</b> · kecepatan rata-rata = <b>${fm(dx/W)} m/s</b> ${dir(dx)}`}},
+3:{t:'LKPD 3 · Gerak lurus beraturan (GLB)',
+q:'Bagaimana posisi benda berubah terhadap waktu jika kecepatannya tetap, dan apa arti kemiringan grafik x–t?',
+c:[['v','Kecepatan v (variabel kontrol, dijaga tetap)',-10,10,1,2,'m/s'],['tm','Skala waktu pada grafik',5,20,5,10,'s'],['t','Waktu t (variabel bebas)',0,20,0.1,4,'s']],
+h:['t (s)','v (m/s)','x (m)','Δx/Δt dari catatan sebelumnya (m/s)'],ah:90,gh:200,g2:160,
+draw(){const v=V(3,'v'),tm=V(3,'tm'),X=u=>v*u;$('k3t').max=tm;const t=V(3,'t');$('k3tv').textContent=fm(t);
+ const lo=Math.min(0,X(tm)),hi=Math.max(0,X(tm)),[x,w]=cv('a3'),sx=p=>30+(w-60)*(p-lo)/((hi-lo)||1),y=50;
+ x.textAlign='center';x.strokeStyle=C('--mut');x.lineWidth=2;x.beginPath();x.moveTo(30,y);x.lineTo(w-30,y);x.stroke();
+ x.lineWidth=1;x.fillStyle=C('--mut');
+ nice(lo,hi,6).forEach(p=>{x.beginPath();x.moveTo(sx(p),y-4);x.lineTo(sx(p),y+4);x.stroke();x.fillText(fm(p),sx(p),y+18)});
+ x.fillText('x (m)',w-30,y-14);
+ for(let k=0;k<=t;k++){x.beginPath();x.arc(sx(X(k)),y,3,0,7);x.fill()}
+ x.fillStyle=C('--acc');x.beginPath();x.arc(sx(X(t)),y,9,0,7);x.fill();
+ gplot('g3',tm,[[X,C('--acc')]],t,'x (m)','t (s)');gplot('i3',tm,[[()=>v,C('--acc2')]],t,'v (m/s)','t (s)');
+ this.r=[t,v,X(t),''];
+ $('o3').innerHTML=`Kecepatan v (kontrol) = <b>${fm(v)} m/s</b> · waktu t (bebas) = <b>${fm(t)} s</b> · posisi x (terikat) = <b>${fm(X(t))} m</b>`}},
+4:{t:'LKPD 4 · Gerak lurus berubah beraturan (GLBB)',
+q:'Bagaimana kecepatan benda berubah dari waktu ke waktu saat dipercepat atau diperlambat?',
+c:[['v0','Kecepatan awal',0,10,1,2,'m/s'],['a','Percepatan (negatif = diperlambat)',-4,4,0.5,2,'m/s²'],['t','Waktu t',0,10,0.1,4,'s']],
+h:['t (s)','v (m/s)','Posisi s (m)','Δv/Δt dari catatan sebelumnya (m/s²)'],ah:120,gh:190,g2:190,
+draw(){const v0=V(4,'v0'),a=V(4,'a'),t=V(4,'t'),s=u=>v0*u+.5*a*u*u,v=u=>v0+a*u;let lo=0,hi=0;
+ for(let i=0;i<=20;i++){lo=Math.min(lo,s(i/2));hi=Math.max(hi,s(i/2))}if(hi-lo<1)hi=lo+1;
+ const[x,w]=cv('a4'),m=30,sx=p=>m+(w-2*m)*(p-lo)/(hi-lo),y=75;
+ x.textAlign='center';x.strokeStyle=C('--mut');x.lineWidth=1;x.beginPath();x.moveTo(m,y);x.lineTo(w-m,y);x.stroke();
+ x.fillStyle=C('--mut');x.fillText('0 m',sx(0),y+20);
+ for(let k=0;k<=t;k++){x.beginPath();x.arc(sx(s(k)),y,3,0,7);x.fill();x.fillText(k+' s',sx(s(k)),y-8)}
+ const bx=sx(s(t));x.fillStyle=C('--acc');x.beginPath();x.arc(bx,y,9,0,7);x.fill();
+ x.strokeStyle=C('--acc2');x.lineWidth=3;x.beginPath();x.moveTo(bx,y-30);x.lineTo(bx+v(t)*2.5,y-30);x.stroke();
+ x.fillStyle=C('--acc2');x.fillText('arah dan panjang v',bx,y-38);
+ gplot('g4',10,[[v,C('--acc')]],t,'v (m/s)','t (s)');gplot('i4',10,[[s,C('--acc2')]],t,'s (m)','t (s)');
+ this.r=[t,v(t),s(t),''];
+ $('o4').innerHTML=`t = <b>${fm(t)} s</b> · v = <b>${fm(v(t))} m/s</b> · posisi s = <b>${fm(s(t))} m</b>`}},
+5:{t:'LKPD 5 · Analisis grafik gerak',
+q:'Seperti apa bentuk grafik x–t, v–t, dan a–t pada GLB dan GLBB, dan apa arti kemiringannya?',
+c:[['j','Jenis gerak',['GLB (a = 0)','GLBB']],['v0','Kecepatan awal',0,10,1,2,'m/s'],['a','Percepatan (dipakai pada GLBB)',-4,4,0.5,1,'m/s²'],['t','Waktu t',0,10,0.1,5,'s']],
+h:['t (s)','x (m)','v (m/s)','a (m/s²)'],gh:400,
+draw(){const v0=V(5,'v0'),A=V(5,'j')?V(5,'a'):0,t=V(5,'t'),[g,w]=cv('g5'),
+ F=[['x–t (m)',u=>v0*u+.5*A*u*u],['v–t (m/s)',u=>v0+A*u],['a–t (m/s²)',u=>A]];
+ F.forEach(([n,f],i)=>plot(g,44,22+i*130,w-60,90,[[f,C('--acc')]],10,n,t));
+ this.r=[t,F[0][1](t),F[1][1](t),A];
+ $('o5').innerHTML=`t = <b>${fm(t)} s</b> · x = <b>${fm(this.r[1])} m</b> · v = <b>${fm(this.r[2])} m/s</b> · a = <b>${fm(A)} m/s²</b>`}}
+};
+const NAV={1:'1 · Posisi dan perpindahan',2:'2 · Kelajuan dan kecepatan',3:'3 · GLB',4:'4 · GLBB',5:'5 · Grafik gerak'},LG={1:[],2:[],3:[],4:[],5:[]};
+function mk(n,L){return L.map(([k,l,a,b,s,v,u])=>Array.isArray(a)?
+ `<label>${l}<select id="k${n}${k}">${a.map((o,i)=>`<option value="${i}">${o}</option>`).join('')}</select></label>`:
+ `<label>${l}: <b id="k${n}${k}v">${fm(v)}</b> ${u}<input type="range" id="k${n}${k}" min="${a}" max="${b}" step="${s}" value="${v}"></label>`).join('')}
+function tbl(n){$('b'+n).innerHTML=LG[n].map(r=>'<tr>'+r.map(c=>`<td>${typeof c=='number'?fm(c):c}</td>`).join('')+'</tr>').join('')}
+function go(n){cancelAnimationFrame(raf);cur=n;
+ Object.keys(P).forEach(k=>{$('s'+k).hidden=k!=n;$('n'+k).classList.toggle('on',k==n)});
+ if(location.hash!=='#'+n)location.hash='#'+n;P[n].draw()}
+Object.entries(P).forEach(([n,p])=>{
+ const b=document.createElement('button');b.id='n'+n;b.textContent=NAV[n];b.onclick=()=>go(+n);$('nav').appendChild(b);
+ const s=document.createElement('section');s.id='s'+n;s.hidden=true;
+ s.innerHTML=`<h2>${p.t}</h2><div class="q"><b>Rumusan masalah:</b> ${p.q}</div>
+<label>Hipotesismu (tebakan sebelum mencoba)<textarea rows="2"></textarea></label>
+<div class="ctl">${mk(n,p.c)}</div>
+<div class="btn"><button data-a="p">▶ Jalankan</button><button data-a="l">＋ Catat data</button><button data-a="c">Hapus data</button>${p.x?'<button data-a="x">Cek hasil hitungan</button>':''}</div>
+${p.ah?`<canvas id="a${n}" data-h="${p.ah}"></canvas>`:''}${p.gh?`<canvas id="g${n}" data-h="${p.gh}"></canvas>`:''}${p.g2?`<canvas id="i${n}" data-h="${p.g2}"></canvas>`:''}
+<div class="out" id="o${n}"></div>
+<div class="sc"><table><thead><tr>${p.h.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody id="b${n}"></tbody></table></div>
+<label>Kesimpulanmu (berdasarkan data pada tabel)<textarea rows="3"></textarea></label>`;
+ s.oninput=e=>{const i=e.target;if(i.id[0]!='k')return;const l=$(i.id+'v');if(l)l.textContent=fm(+i.value);p.pre&&p.pre(i.id);p.draw()};
+ s.onclick=e=>{const a=e.target.dataset.a;if(!a)return;
+  if(a=='l'){const r=[...p.r],pv=LG[n].at(-1);if(n==3||n==4){const k=n==3?2:1;r[3]=pv&&r[0]!=pv[0]?(r[k]-pv[k])/(r[0]-pv[0]):'–'}LG[n].push(r);tbl(n)}
+  if(a=='c'){LG[n]=[];tbl(n)}
+  if(a=='x'){p.show=!p.show;p.draw()}
+  if(a=='p'){cancelAnimationFrame(raf);p.draw();const sl=$('k'+n+'t'),mx=+sl.max;let t0;
+   const f=ts=>{t0=t0??ts;const q=Math.min(1,(ts-t0)/8000);sl.value=mx*q;$('k'+n+'tv').textContent=fm(+sl.value);p.draw();if(q<1)raf=requestAnimationFrame(f)};raf=requestAnimationFrame(f)}};
+ $('main').appendChild(s)});
+onresize=()=>P[cur].draw();
+matchMedia('(prefers-color-scheme:dark)').onchange=()=>P[cur].draw();
+onhashchange=()=>{const n=+location.hash.slice(1);if(P[n]&&n!=cur)go(n)};
+{const n=+location.hash.slice(1);go(P[n]?n:1)}
+</script></body></html>
